@@ -10,17 +10,20 @@
 #include <sys/stat.h>
 #include <unistd.h>
 #define MAX 1024
-#define crown_port 8000
+#define crown_port 5959
 
 void error_handling(char *message);
 
 int main(int argc, char** argv){
+
+	struct stat file_info;
 
 	int sock;
 	int crown_sock;
 	int readbytes;
 	int file_bin;
 	int left_size;
+	int size_file;
 
 	FILE *fp;
 
@@ -54,67 +57,76 @@ int main(int argc, char** argv){
 		error_handling("connect() error");
 
 	//<2 DONE: Execute CROWNC - Send All File
-	sprintf(sysCrown,"%s%s%s","crownc ",argv[3],".c\0");
-	printf("%s\n", sysCrown);
-	
+	sprintf(sysCrown,"%s%s%s","crownc ",argv[3],".c 2> result_crownc > result_crown2");
+	//printf("%s\n", sysCrown);
 	system(sysCrown);
-	system("cp * c2");
-	system("diff c1 c2|sed 's/Only in c2: //g' >diff");
-	system("sed '/a.out/d' diff >diff_result");
-	fp = fopen("diff_result", "r");
+	//system("cp * c2");
+	//system("diff c1 c2|sed 's/Only in c2: //g' >diff");
+	//system("sed '/a.out/d' diff >diff_result");
+	fp = fopen("testcode", "r");
 	if(fp != NULL){
 		while(!feof(fp)){
 			memset(buf, 0x00, MAX);
-			message_p = fgets(buf, MAX, fp);
+			
 			if((message_p = fgets(buf, MAX, fp))==NULL)break;
 
 			send(sock, message_p, strlen(message_p)-1, 0);
 			message_p[strlen(message_p)-1] = '\0';
-			printf("%s\n",message_p);
+			//printf("%s\n",message_p);
 			file_bin = open(message_p, O_RDONLY);
-
+			stat(message_p, &file_info);
+			//printf("%s size is %d\n", message_p, file_info.st_size);
 			if(!file_bin) {
 				perror("Error : ");
 				return 1;
 			}
 
 			memset(buf, 0x00, MAX);
-			read(sock, buf, MAX);//start
-			
+			recv(sock, buf, MAX,0);//start
+		
+			memset(buf,0x00,MAX);
+			sprintf(buf,"%d",file_info.st_size);
+			send(sock, buf,strlen(buf),0);
+			memset(buf, 0x00, MAX);
+			recv(sock, buf,MAX,0);//ok
+
 			while(1) {
 				memset(buf, 0x00, MAX);
 				left_size = read(file_bin, buf, MAX);
-				write(sock, buf, left_size);
+
+				send(sock, buf, left_size,0);
 				if(left_size == EOF | left_size == 0) {
 					break;
 				}
+				
 			}
 			memset(buf, 0x00, MAX);
-			read(sock, buf, MAX);//good
+			recv(sock, buf, MAX,0);//good
 
 			close(file_bin);
 		}
-		printf("finish\n");
+		//printf("finish\n");
 		send(sock, "finish", strlen("finish"), 0);
 	}
 
 	memset(buf, 0x00, MAX);
-	read(sock, buf, MAX);//2>
-	printf("%s\n",buf);
+	recv(sock, buf, MAX,0);//2>
+	//printf("%s\n",buf);
 	//<3 DONE: Send Message - Call server run_crown
 	memset(message, 0x00, MAX);
 	sprintf(message,"%s%s%s%s%s",argv[3]," ",argv[4]," ",argv[5]);
-	write(sock, message, strlen(message));
+	send(sock, message, strlen(message),0);
 
 	// if send success 1
 	memset(buf, 0x00, MAX);
-	read(sock, buf, MAX);//3>
+	recv(sock, buf, MAX,0);//3>
 
 	//<4 TODO: Receive Input File
 	//<5 TODO: Connect Server-Crown Socket
 	int iter_num = 0;
 	while(iter_num < atoi(argv[4])){
 		iter_num++;
+		printf("iter: %d\n",iter_num);
 		crown_sock = socket(PF_INET, SOCK_STREAM, 0);
 
 		if(crown_sock == -1)
@@ -130,7 +142,7 @@ int main(int argc, char** argv){
 			else break;
 		}
 		memset(buf, 0x00, MAX);
-		read(crown_sock, buf, MAX);
+		recv(crown_sock, buf, MAX,0);
 		memset(message, 0x00, MAX);
 		strcpy(message, buf);
 
@@ -140,97 +152,121 @@ int main(int argc, char** argv){
 			perror("Error: FILE Open Error");
 			return 1;
 		}
+
 		
 		send(crown_sock, "ok", strlen("ok"), 0);
+		//printf("%s\n",message);
 		
+		memset(buf,0x00,MAX);
+		read(crown_sock, buf,MAX);
+		size_file = atoi(buf);
+		//printf("size: %d\n", size_file);
+		write(crown_sock, "ok",strlen("ok"));
+
 		while(1) {
 			
 			memset(buf, 0x00, MAX);
 			left_size = read(crown_sock, buf, MAX);
-			if(strstr(buf,"NULL")==NULL){
-				printf("finish file\n");
-				write(crown_sock, "done", strlen("done"));
-				break;
-			}
-			printf(">>%s\n",buf);
+			//printf(">>%s\n",buf);
+			if(strstr(buf,"NULL")==NULL)
+				write(file_bin, buf,left_size);
+			stat(message,&file_info);
+			//printf("%d / %d", file_info.st_size ,size_file);
 
-			if(left_size == EOF | left_size == 0) {
-				printf("finish file\n");
-				write(crown_sock, "done", strlen("done"));
+			if(file_info.st_size >= size_file){
+				//printf("finish file\n");
+				send(crown_sock, "done", strlen("done"),0);
 				break;
 			}
-
-			if(left_size < MAX){
-				printf("finish file\n");
-				write(crown_sock, "done", strlen("done"));
-				break;
-			}
-			write(file_bin, buf, left_size);
+			send(file_bin, buf, left_size,0);
 		}
 		close(file_bin);
+		if(size_file == 0)system("rm input");
 
 		//<6 DONE: Execute Cil
 		memset(buf, 0x00, MAX);
-		read(crown_sock, buf, MAX);//good
-		system("cp * c1");
+		recv(crown_sock, buf, MAX,0);//good
+		//system("cp * c1");
 		memset(message, 0x00, MAX);
 		sprintf(message,"%s%s","./",argv[3]);
 		system(message);//6>
-		printf("cil exe\n");
+		printf("%s\n",message);
 		send(crown_sock, "send", strlen("send"), 0);
 		//<7 TODO:Send Diff Files
-		system("cp * c2");
-		system("diff c1 c2|sed 's/Only in c2: //g' >diff");
-		system("egrep -o 'szd_execution|coverage|input' diff |uniq >diff_result");
+		//system("cp * c2");
+		//system("diff c1 c2|sed 's/Only in c2: //g' >diff");
+		//system("egrep -o 'szd_execution|coverage|input' diff |uniq >diff_result");
 		
-		system("mv c2 c1");
-		system("rm -rf c2");
-		system("mkdir c2");
+		//system("mv c2 c1");
+		//system("rm -rf c2");
+		//system("mkdir c2");
 
 
 		fp = fopen("diff_result", "r");
-		printf("hey1\n");	
 		if(fp != NULL){
 			while(!feof(fp)){
+				//printf("hi");
 				memset(buf, 0x00, MAX);
-				printf("hey2\n");
 				if((message_p = fgets(buf, MAX, fp))==NULL){
-					printf("nothing\n");
+					//printf("nothing\n");
 					send(crown_sock, "finish", strlen("finish"), 0);
 					break;
 				}
-				printf("hey3\n");
-				send(crown_sock, message_p, strlen(message_p)-1, 0);
-				message_p[strlen(message_p)-1] = '\0';
-				printf("%s\n",message_p);
 				
-				file_bin = open(message_p, O_RDONLY);
+				message_p[strlen(message_p)-1] = '\0';
+				//printf("%s\n",message_p);
+				
+				file_bin = open(message_p,  O_RDONLY);
 
-				if(!file_bin) {
+				if(file_bin==-1) {
 					perror("Error : ");
-					exit(1);
+					continue;
 				}
+				//printf("%s\n", message_p);
+				send(crown_sock,message_p, strlen(message_p),0);
+				stat(message_p,&file_info);
+				int size_file = file_info.st_size;
 				memset(buf, 0x00, MAX);
-				read(crown_sock, buf, MAX);
-
+				recv(crown_sock, buf, MAX,0);
+				memset(buf,0x00,MAX);
+				sprintf(buf,"%d",size_file);
+				//printf("size is %d\n",size_file);
+				send(crown_sock, buf, strlen(buf),0);
+				memset(buf,0x00, MAX);
+				recv(crown_sock, buf, MAX,0);//size ok
+				//printf("size ok: %s\n",buf);
 				while(1) {
 					memset(buf, 0x00, MAX);
-					left_size = read(file_bin, buf, MAX);
-					printf("read: %s\n",buf);
-					write(crown_sock, buf, left_size);
+					left_size = read(file_bin, (void*)buf, MAX);
+					printf("read: %d\n", left_size);
+					send(crown_sock, (void*)buf, left_size,0);
 					if(left_size == EOF | left_size == 0) {
-						printf("finish file\n");
+						//printf("finish file\n");
 						break;
 					}
 				}
 				memset(buf, 0x00, MAX);
 				read(crown_sock, buf, MAX);//done
+				//printf("done: %s\n", buf);
 				close(file_bin);
 			}
+			//printf("bye\n");
+			
 			send(crown_sock, "finish", strlen("finish"), 0);
-			close(file_bin);
+			memset(buf, 0x00, MAX);
+			
+			//printf("%s\n",buf);
+			
 		}//7>
-		close(crown_sock);
+		//printf("hihi!\n");
+		fclose(fp);
+		memset(buf,0x00,MAX);
+		left_size = read(crown_sock,buf,MAX);
+		//printf("%s\n",buf);
+		if(left_size = EOF | left_size == 0){
+			//printf("hoho\n");
+			if(close(crown_sock)==0)printf("done\n");
+		}
 
 	}//5>
 	//4>
