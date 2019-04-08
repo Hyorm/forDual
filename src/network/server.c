@@ -21,6 +21,8 @@ int main(int argc, char ** argv){
 	int file_bin;
 	int left_size;
 	int clnt_addr_size;
+	int size_file;
+	struct stat file_info;
 
 	struct sockaddr_in serv_addr;
 	struct sockaddr_in clnt_addr;
@@ -28,6 +30,7 @@ int main(int argc, char ** argv){
 	char buf[MAX];
 	char message[MAX];
 	char* message_cat;
+	char name[MAX];
 
 	if(argc!=2){
 		printf("Usage : %s <port>\n", argv[0]);
@@ -66,10 +69,12 @@ int main(int argc, char ** argv){
 		memset(buf, 0x00, MAX);
 		read(clt_sock, buf, MAX);
 		strcpy(message, buf);
-		printf("%s\n",message);
+		//printf("%s\n",message);
 		if(strcmp(message, "finish")==0)
 			break;
 
+		if(strstr(message, ".c")!=NULL)sprintf(name, "%s%s%s","crownc ",message," 2>crown_result > crown_result2");
+		system("rm *.cil.c");
 		file_bin = open(message, O_WRONLY | O_CREAT |O_TRUNC, 0700);
 		if(!file_bin) {
 			perror("file open error : ");
@@ -78,23 +83,30 @@ int main(int argc, char ** argv){
 			write(clt_sock, "start", strlen("start"));
 		}
 
+		memset(buf,0x00,MAX);
+		read(clt_sock,buf,MAX);
+		size_file = atoi(buf);
+		write(clt_sock,"ok",strlen("ok"));
+
 		while(1) {
 			memset(buf, 0x00, MAX);
 			left_size = read(clt_sock, buf, MAX);
 			write(file_bin, buf, left_size);
-			if(left_size<MAX){
+			stat(message,&file_info);
+			if(file_info.st_size >=size_file){
 				write(clt_sock, "good", strlen("good"));
 				break;
 			}
 		}
 		close(file_bin);
 	}
-	printf("out!\n");
+	printf("%s\n",name);
+	system(name);
 	write(clt_sock, "1", strlen("1")); //server <2>
 
 	memset(buf, 0x00, MAX);
 	left_size = read(clt_sock, buf, MAX);
-	printf("buf:%s\n",buf);
+	//printf("buf:%s\n",buf);
 	if(left_size > 0) {
 		strcpy(message, buf);
 		printf("%s > %s\n", inet_ntoa(clnt_addr.sin_addr), message);
@@ -107,7 +119,7 @@ int main(int argc, char ** argv){
 
 	//<4 DONE: Execute Run_Crown
 	memset(buf, 0x00, MAX);
-	sprintf(buf, "%s%s","run_crown ", message);
+	sprintf(buf, "%s%s","run_crown ./", message);
 	printf("%s\n",buf);
 	system(buf);//4>//3>
 
