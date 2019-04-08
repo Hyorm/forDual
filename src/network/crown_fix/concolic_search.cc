@@ -29,15 +29,15 @@
 #include <fcntl.h>
 #include <errno.h>
 
+#define MAX 1024
+#define port_number 5959
+
 #include "run_crown/z3_solver.h"
 #include "run_crown/concolic_search.h"
 #include "base/basic_types.h"
 #include "base/basic_functions.h"
 #include "run_crown/unary_expression.h"
 //#include "run_crown/symbolic_expression_factory.h"
-
-#define MAX 1024
-#define port_number 8000
 
 using std::binary_function;
 using std::ifstream;
@@ -286,132 +286,161 @@ int Search::LaunchProgram(const vector<Value_t>& inputs) {
 		WriteInputToFileOrDie("input", inputs, h, l,i);
 	// The current directory must have "input" file
 	//ret = system(program_.c_str());
-	printf("run\n");
+	//printf("run\n");
 	ret = clientCilExecution();
+	printf("ret = %d\n",ret);
     return ret;
 }
 
 //ADD TODO: Client Cil execution - file transfer
 int Search::clientCilExecution(){
-	int svr_sock, clt_sock;
-	int file_bin;
-	int left_size;
-	int file_num;
+        int svr_sock, clt_sock;
+        int file_bin;
+        int left_size;
+        int file_num;
+        int size_file;
 
-	socklen_t clnt_addr_size;
+        struct stat file_info ;
+        socklen_t clnt_addr_size;
 
-	struct sockaddr_in serv_addr;
-	struct sockaddr_in clnt_addr;
+        struct sockaddr_in serv_addr;
+        struct sockaddr_in clnt_addr;
 
-	char buf[MAX];
-	char* message;
+        char* buf = new char[MAX];
+        char* message;
+        char* file_name = new char[MAX];
 
-	svr_sock=socket(PF_INET, SOCK_STREAM, 0);
-	if(svr_sock == -1)
-		error_handling("socket() error");
-	
-	memset(&serv_addr, 0, sizeof(serv_addr));
-	serv_addr.sin_family=AF_INET;
-	serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-	serv_addr.sin_port=htons(port_number);
+        svr_sock=socket(PF_INET, SOCK_STREAM, 0);
+        if(svr_sock == -1)
+                error_handling("socket() error");
 
-	if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
-		error_handling("bind() error");
+        memset(&serv_addr, 0, sizeof(serv_addr));
+        serv_addr.sin_family=AF_INET;
+        serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+        serv_addr.sin_port=htons(port_number);
 
-	if(listen(svr_sock, 5)==-1)
-		error_handling("listen() error");
+        if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
+                error_handling("bind() error");
 
-	clnt_addr_size=sizeof(clnt_addr);
-	clt_sock=accept(svr_sock, (struct sockaddr*)&clnt_addr,&clnt_addr_size);
+        if(listen(svr_sock, 5)==-1)
+                error_handling("listen() error");
 
-	if(clt_sock==-1)
-		error_handling("accept() error");
+        clnt_addr_size=sizeof(clnt_addr);
+        clt_sock=accept(svr_sock, (struct sockaddr*)&clnt_addr,&clnt_addr_size);
 
-	sleep(5);
+        if(clt_sock==-1)
+                error_handling("accept() error");
 
-	//TODO: file transfer
-	//DONE: send input
-	printf("send input\n");
-	file_bin = open("input", O_RDONLY);
+        sleep(5);
 
-	if(!file_bin) {
-		perror("file open error : ");
-	}
+        //TODO: file transfer
+        //DONE: send input
+        //printf("send input\n");
+        file_bin = open("input", O_RDONLY);
 
-	write(clt_sock, "input", MAX);
-	memset(buf, 0x00, MAX);
-	read(clt_sock, buf, MAX);//ok
-	printf("ok:%s\n",buf);
-	while(1) {
-		memset(buf, 0x00, MAX);
-		left_size = read(file_bin, buf, MAX);
-		if(strlen(buf)==0){
-			printf("send NULL\n");
-			write(clt_sock, "NULL", strlen("NULL"));
-		}
-		else write(clt_sock, buf, left_size);
-		if(left_size == EOF | left_size == 0) {
-			printf("finish file\n");
-			break;
-		}
-	}
+        stat("input", &file_info);
 
-	close(file_bin);
-	
-	memset(buf, 0x00, MAX);
-	read(clt_sock, buf, MAX);//done
+        if(!file_bin) {
+                perror("file open error : ");
+        }
 
-	write(clt_sock, "good", MAX);
-	//DONE: receive file
+        write(clt_sock, "input", MAX);
+        memset(buf, 0x00, MAX);
+        read(clt_sock, buf, MAX);//ok
 
-	memset(buf, 0x00, MAX);
-	read(clt_sock, buf, MAX);//send
-	while(1){
+        memset(buf, 0x00,MAX);
+        sprintf(buf,"%d",file_info.st_size);
+        //printf("size %s\n", buf);
+        send(clt_sock,buf,strlen(buf),0);
 
-		memset(buf, 0x00, MAX);
-		read(clt_sock, buf, MAX);
-		
-		if(strcmp(buf, "finish")==0)
-			break;
-		
-		while(1){
-			file_bin = open(buf, O_WRONLY | O_CREAT |O_TRUNC, 0700);
-			
-			if(!file_bin) {
-				perror("file open error : ");
-				exit(1);
-			}else{
-				write(clt_sock, "1", strlen("1"));
-				break;
-			}
-		}
-		while(1) {
-			memset(buf, 0x00, MAX);
-			left_size = read(clt_sock, buf, MAX);
-			write(file_bin, buf, left_size);
-			printf("read: -%s-\n",buf);
-			if(left_size < MAX){
-				printf("finish file\n");
-				write(clt_sock, "done", strlen("done"));
-				break;
-			}
-			
-		}
-		close(file_bin);
-	}
+        memset(buf,0x00,MAX);
+        recv(clt_sock, buf, MAX,0);
 
-	close(clt_sock);
-	close(svr_sock);
-	
-	return 0;
+        //printf("ok:%s\n",buf);
+        while(1) {
+                memset(buf, 0x00, MAX);
+                left_size = read(file_bin, buf, MAX);
+                if(strlen(buf)==0){
+                        //printf("send NULL\n");
+                        write(clt_sock, "NULL", strlen("NULL"));
+                }
+                else write(clt_sock, buf, left_size);
+                if(left_size == EOF | left_size == 0) {
+                        //printf("finish file\n");
+                        break;
+                }
+        }
+
+        close(file_bin);
+
+        memset(buf, 0x00, MAX);
+        read(clt_sock, buf, MAX);//done
+
+        write(clt_sock, "good", MAX);
+        //DONE: receive file
+
+        memset(buf, 0x00, MAX);
+        read(clt_sock, buf, MAX);//send
+        while(1){
+                memset(buf, 0x00, MAX);
+                read(clt_sock, buf, MAX);
+                //printf("buf>>%s>> %d\n",buf,strlen(buf));
+                if(strlen(buf)==0){
+                        break;
+                }
+                if(strcmp(buf,"finish")==0){
+                        //printf("here\n");
+                        break;
+                }
+                memset(file_name, 0x00,MAX);
+                strcpy(file_name, buf);
+                while(1){
+                        file_bin = open(file_name, O_WRONLY | O_CREAT |O_TRUNC, 0700);
+
+                        if(!file_bin) {
+                                perror("file open error : ");
+                                exit(1);
+                        }else{
+                                write(clt_sock, "1", strlen("1"));
+                                break;
+                        }
+                }
+
+                memset(buf, 0x00, MAX);
+                read(clt_sock, buf,MAX);
+                size_file = atoi(buf);
+                //printf("size_buf = %d\n",size_file);
+                send(clt_sock, "size ok", strlen("size ok"),0);
+
+                while(1) {
+                        memset(buf, 0x00, MAX);
+                        left_size = read(clt_sock, (void*)buf, MAX);
+                        write(file_bin, (void*)buf, left_size);
+                        stat(file_name, &file_info);
+                        if(file_info.st_size >= size_file){
+                                //printf("finish file\n");
+                                write(clt_sock, "done", strlen("done"));
+                                break;
+                        }
+
+                }
+                close(file_bin);
+        }
+        delete[] file_name;
+        delete[] buf;
+        close(clt_sock);
+        close(svr_sock);
+
+        return 0;
 }
 void Search::error_handling(char *message){
 
-	fputs(message, stderr);
-	fputc('\n', stderr);
-	exit(1);
+        fputs(message, stderr);
+        fputc('\n', stderr);
+        exit(1);
 
 }
+
 
 void Search::RunProgram(const vector<Value_t>& inputs, SymbolicExecution* ex) {
     int exitcode;
@@ -459,7 +488,9 @@ void Search::RunProgram(const vector<Value_t>& inputs, SymbolicExecution* ex) {
 	global_numOfExpr_ = 0;
 	global_numOfVar_ = 0;
 	global_numOfOperator_ = 0;
+	printf("up\n");
 	assert(in && ex->Parse(in));
+	printf("down\n");
 	//std::cout<<"Parse time "<<((double)clock() - clk)/CLOCKS_PER_SEC<<" numOfExpr "<<global_numOfExpr_<<" op "<<global_numOfOperator_<<" var "<<global_numOfVar_<<std::endl;
 	in.close();
 
