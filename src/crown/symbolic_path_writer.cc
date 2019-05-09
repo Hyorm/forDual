@@ -118,7 +118,12 @@ void SymbolicPathWriter::Serialize(ostream &os) const{
 		os.write((char*)&(j->lineno) , sizeof(int));send_server_path((char*)&(j->lineno), "int");
 		len = (j->fname).length();
 		os.write((char*)&len, sizeof(len));send_server_path((char*)&len, "size_t");
-		os.write((char*)((j->fname).c_str()), len);send_server_path((char*)((j->fname).c_str()), "size_t");
+
+
+		memset(nbr, 0x00, size_MAX);
+		sprintf(nbr, "%d", len);
+
+		os.write((char*)((j->fname).c_str()), len);send_server_path((char*)((j->fname).c_str()), nbr);
 
 		(*i)->Serialize(os);
 	}
@@ -126,7 +131,7 @@ void SymbolicPathWriter::Serialize(ostream &os) const{
 
 void SymbolicPathWriter::send_server_path(char* message, char* type) const {
 
-	printf("send_server_path\n");
+	//printf("send_server_path\n");
 
         char cmd[size_MAX];
 

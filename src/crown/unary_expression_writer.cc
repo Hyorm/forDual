@@ -54,7 +54,7 @@ void UnaryExprWriter::Serialize(ostream &os) const {
 
 void UnaryExprWriter::send_server(char* message, char* type) const{
 
-	printf("send_server_Unary message: .%s. type: .%s.\n", message, type);
+	//printf("send_server_Unary message: .%s. type: .%s.\n", message, type);
 
         char cmd[size_MAX];
 

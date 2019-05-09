@@ -185,7 +185,7 @@ void SymbolicMemoryWriter::MemElem::Serialize(ostream &os) const {
 
 void SymbolicMemoryWriter::send_server_memory(char* message, char* type) const {
 
-	printf("send_server_memory\n");
+	//printf("send_server_memory\n");
 
         char cmd[size_MAX];
 

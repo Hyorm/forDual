@@ -32,6 +32,9 @@ void AtomicExprWriter::AppendToString(string* s) const {
 }
 
 void AtomicExprWriter::Serialize(ostream &os) const {
+
+	//printf("Atomic\n");
+
 	SymbolicExprWriter::Serialize(os, kBasicNodeTag);
 
 	os.write((char*)&var_, sizeof(var_t));send_server((char*)&var_,"unsigned int");
@@ -39,7 +42,7 @@ void AtomicExprWriter::Serialize(ostream &os) const {
 
 void AtomicExprWriter::send_server(char* message, char* type) const{
 
-	printf("send_server_Atomic message: .%s. type: .%s.\n", message, type);
+	//printf("send_server_Atomic message: .%s. type: .%s.\n", message, type);
 
         char cmd[size_MAX];
 

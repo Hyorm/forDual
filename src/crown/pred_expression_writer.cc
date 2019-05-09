@@ -64,7 +64,7 @@ void PredExprWriter::Serialize(ostream &os) const {
 
 void PredExprWriter::send_server(char* message, char* type) const{
 
-	printf("send_server_Pred message: .%s. type: .%s.\n", message, type);
+	//printf("send_server_Pred message: .%s. type: .%s.\n", message, type);
 
         char cmd[size_MAX];
 

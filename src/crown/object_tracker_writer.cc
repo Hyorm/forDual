@@ -153,7 +153,7 @@ void ObjectTrackerWriter::Serialize(ostream &os) const {
 
 void ObjectTrackerWriter::send_server_tracker(char* message, char* type) const {
 
-	printf("send_server_tracker\n");
+	//printf("send_server_tracker\n");
 
         char cmd[size_MAX];
 

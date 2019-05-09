@@ -116,7 +116,7 @@ void SymbolicExecutionWriter::Serialize(ostream &os, const ObjectTrackerWriter* 
 
 void SymbolicExecutionWriter::send_server_exec(char* message, char* type) const{
 
-	printf("send_server_exec\n");
+	//printf("send_server_exec\n");
 
 	char cmd[size_MAX];
 

@@ -70,13 +70,12 @@ void SymbolicExprWriter::Serialize(ostream &os, char c) const {
 
 	IFDEBUG(std::cerr<<"SerializeInSymExpr: "<<value_.type<<" "<<value_.integral<<" "<<value_.floating<<" size:"<<(size_t)size_<<" nodeTy:"<<(int)c<<" id:"<<unique_id_<<std::endl);
 	
-	printf("os: %d\n", &os);
 	os.write(&c, sizeof(char)); send_server_expr(&c, "char");
 }
 
 void SymbolicExprWriter::send_server_expr(char* message, char* type) const {
 
-	printf("send_server_expr\n");
+	//printf("send_server_expr\n");
 
         char cmd[size_MAX];
 

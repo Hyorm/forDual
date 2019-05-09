@@ -54,7 +54,7 @@ void BinExprWriter::Serialize(ostream &os) const {
 
 void BinExprWriter::send_server(char* message, char* type) const{
 
-	printf("send_server_Bin message: .%s. type: .%s.\n", message, type);
+	//printf("send_server_Bin message: .%s. type: .%s.\n", message, type);
 
         char cmd[size_MAX];
 

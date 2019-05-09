@@ -22,6 +22,8 @@
 #include "libcrown/symbolic_object_writer.h"
 #include "libcrown/symbolic_expression_factory.h"
 
+#define size_MAX 1024
+
 namespace crown {
 
 DerefExprWriter::DerefExprWriter(SymbolicExprWriter *c, SymbolicObjectWriter *o,
@@ -49,7 +51,7 @@ void DerefExprWriter::AppendToString(string *s) const {
 }
 
 void DerefExprWriter::Serialize(ostream &os) const {
-	printf("serialize Deref\n");
+	//printf("serialize Deref\n");
 	SymbolicExprWriter::Serialize(os, kDerefNodeTag);
 
 	assert(object_->managerIdx() == managerIdx_);
@@ -64,13 +66,24 @@ void DerefExprWriter::Serialize(ostream &os) const {
 	//Store the indexes to find object on run_crown
 	size_t managerIdx = object_->managerIdx();
 	size_t snapshotIdx = object_->snapshotIdx();
-	os.write((char*)&managerIdx, sizeof(size_t));
-	os.write((char*)&snapshotIdx, sizeof(size_t));
+	os.write((char*)&managerIdx, sizeof(size_t));send_server((char*)&managerIdx,"size_t");
+	os.write((char*)&snapshotIdx, sizeof(size_t));send_server((char*)&snapshotIdx, "size_t");
 
 //	object_->Serialize(os);
 	addr_->Serialize(os);
 }
 
+void DerefExprWriter::send_server(char* message, char* type) const{
 
+        //printf("send_server_Deref message: .%s. type: .%s.\n", message, type);
+
+        char cmd[size_MAX];
+
+        memset(cmd, 0x00, size_MAX);
+
+        sprintf(cmd,"%s%s%s%s%s","tcp_client 2 \"",message,"\" \"", type,"\"");
+
+        system(cmd);
+}
 }  // namespace crown
 
