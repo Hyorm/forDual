@@ -12,7 +12,7 @@
 
 #define MAX 1024
 #define crown_ip "192.168.0.150"
-#define crown_port 2083
+#define crown_port 2025
 
 void error_handling(char *message);
 
@@ -90,8 +90,8 @@ int main(int argc, char** argv){
 	//2>
 	//<3 TODO: Send piece of file
 	else if(atoi(argv[1])==2){
-		printf("argv[2]: %s\n",argv[2]);
-		printf("argv[3]: %s\n",argv[3]);
+		//printf("argv[2]: %s\n",argv[2]);
+		//printf("argv[3]: %s\n",argv[3]);
 		
 		if(strcmp(argv[2],"")==0){
 			char* crown_NULL = "crown_NULL";

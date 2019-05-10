@@ -57,7 +57,7 @@ int main(int argc, char ** argv){
 		error_handling("listen() error");
 
 	clnt_addr_size=sizeof(clnt_addr);
-	
+//while(1){	
 	while(1){
 		clt_sock=accept(svr_sock, (struct sockaddr*)&clnt_addr,&clnt_addr_size);
 		//printf("New Client Connect : %s\n", inet_ntoa(clnt_addr.sin_addr)); 
@@ -68,7 +68,7 @@ int main(int argc, char ** argv){
 			memset(buf, 0x00, MAX);
 
 			read(clt_sock, buf, MAX);
-			printf("buf: %s\n",buf);
+			//printf("buf: %s\n",buf);
 		
 			if(strcmp(buf,"szd_done")==0){
 				close(file_bin);
@@ -84,7 +84,7 @@ int main(int argc, char ** argv){
 			memset(type, 0x00, MAX);
 
 			read(clt_sock, type, MAX);
-			printf("type: %s\n",type);
+			//printf("type: %s\n",type);
 
 			int idx = -1;
 
@@ -101,7 +101,7 @@ int main(int argc, char ** argv){
 					type_tok = strtok(type,"*");
 					re_tok = strtok(NULL,"*");
 					
-					printf("type_tok:%s, re_tok:%s\n",type_tok, re_tok);	
+					//printf("type_tok:%s, re_tok:%s\n",type_tok, re_tok);	
 
 					for(int i = 0; i < type_num; i++){
 						if(strcmp(re_tok,type_list[i])==0){
@@ -118,6 +118,14 @@ int main(int argc, char ** argv){
 		close(clt_sock);
 
 	}
+/*	printf("Quit? (y/n) >");
+	char qq;
+	scanf("%s", &qq);
+	if(qq == 'y'){
+		close(svr_sock);
+		return 0;
+	}
+}*/
 	close(svr_sock);
 	return 0;
 
