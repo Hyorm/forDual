@@ -64,7 +64,9 @@ int main(int argc, char** argv){
 		recv_msg(atoi(argv[4]));
 	
 		if(strcmp(buf_msg, "exec cil")==0){
-	
+
+			recv_file(atoi(argv[4]));
+
 			memset(cmd, 0x00, MAX);
 			sprintf(cmd,"%s%s","./",argv[1]);
 		

@@ -86,12 +86,11 @@ void send_file(int port, char* file_name){
 
         file_bin = open(file_name, O_RDONLY);
 
-        stat(file_name, &file_info);
-
         if(!file_bin) {
                 perror("Error : ");
                 exit(1);
         }
+	stat(file_name, &file_info);
 
         send(clt_sock, file_name,strlen(file_name),0);
 
