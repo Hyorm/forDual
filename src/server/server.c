@@ -11,128 +11,250 @@
 #include <stdlib.h>
 
 #define MAX 1024
-#define type_num 8
 
 void error_handling(char *message);
 
-int main(int argc, char ** argv){
+void cnct_client(int port);
 
-	int svr_sock, clt_sock;
-	int clnt_addr_size;
-	int file_bin;
+void recv_file(int port);
+void recv_msg(int port);
+void send_file(int port, char* file_name);
+void send_msg(int port, char* message);
+
+char target_name[MAX];
+int iter_num;
+char method[MAX];
+int svr_sock;
+int clt_sock;
+
+char buf_msg[MAX];
+
+int main(int argc, char** argv){
+
+	char cmd[MAX];
+
+        if(argc <3){
+                 printf("Usage : %s [port: number]\n", argv[0]);
+                 exit(1);
+        }
+
+	//<1 TODO: Receive Option
+
+	recv_msg(atoi(argv[1]));
+	sprintf(target_name,"%s",buf_msg);
+
+	recv_msg(atoi(argv[1]));
+	iter_num = atoi(buf_msg);
+	
+	recv_msg(atoi(argv[1]));
+	sprintf(method,"%s",buf_msg);
+
+	//1>
+	
+	
+	//<2 TODO: Receive Target File
+	
+	recv_file(atoi(argv[1]));
+
+	//2>
+	
+
+	//<3 TODO: Crownc Target File
+	
+	memset(cmd, 0x00, MAX);
+	sprintf(cmd,"%s%s%s","crownc ",target_name,".c ");
+	system(cmd);
+
+	//3>
+
+
+	//<4 TODO: Run_crown Target File
+	
+	memset(cmd, 0x00, MAX);
+	sprintf(cmd,"%s%s%s%d%s%s","run_crown ./",target_name," ",iter_num," ",method);
+	system(cmd);
+
+	//4>
+	
+
+	//<5 TODO: Send Result
+
+	send_file(atoi(argv[1]),"result");
+
+	//5>
+
+}
+
+void error_handling(char* message){
+
+        fputs(message, stderr);
+        fputc('\n', stderr);
+        exit(1);
+
+}
+void cnct_client(int port){
+
+	int clnt_addr_size;	
 
 	struct sockaddr_in serv_addr;
-	struct sockaddr_in clnt_addr;
-
-	char buf[MAX];
-	char type[MAX];
-
-	char* type_list[type_num] = {"size_t","long long", "char", "int", "value_t", "Value_t","addr_t", "unsigned int"};
-	int type_size[type_num] = {sizeof(size_t),sizeof(long long),sizeof(char),sizeof(int),sizeof(long long int), 24,sizeof(unsigned long int), sizeof(unsigned int)};
-
-	if(argc!=2){
-
-		printf("Usage : %s <port>\n", argv[0]);
-		exit(1);
-	}
-
-	file_bin = open("szd_execution", O_WRONLY | O_CREAT|O_TRUNC , 0700);
-	close(file_bin);
+        struct sockaddr_in clnt_addr;
 
 	svr_sock=socket(PF_INET, SOCK_STREAM, 0);
-
+	
 	if(svr_sock == -1)
-		error_handling("socket() error");
+                error_handling("socket() error");
 
 	memset(&serv_addr, 0, sizeof(serv_addr));
 
 	serv_addr.sin_family=AF_INET;
-	serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
-	serv_addr.sin_port=htons(atoi(argv[1]));
+        serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
+        serv_addr.sin_port=htons(port);
 
 	if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
-		error_handling("bind() error");
+                error_handling("bind() error");
 
 	if(listen(svr_sock, 5)==-1)
-		error_handling("listen() error");
+                error_handling("listen() error");
 
 	clnt_addr_size=sizeof(clnt_addr);
-//while(1){	
+
 	while(1){
 		clt_sock=accept(svr_sock, (struct sockaddr*)&clnt_addr,&clnt_addr_size);
-		//printf("New Client Connect : %s\n", inet_ntoa(clnt_addr.sin_addr)); 
-	
-		if(clt_sock !=-1){
-			
-			file_bin = open("szd_execution", O_WRONLY | O_CREAT|O_APPEND , 0700);		
-			memset(buf, 0x00, MAX);
-
-			read(clt_sock, buf, MAX);
-			//printf("buf: %s\n",buf);
-		
-			if(strcmp(buf,"szd_done")==0){
-				close(file_bin);
-				close(clt_sock);
-				close(svr_sock);
-				break;
-			}
-
-			send(clt_sock, buf, strlen(buf), 0);
-
-			if(strcmp(buf,"crown_NULL")==0) memset(buf, 0x00, MAX);
-
-			memset(type, 0x00, MAX);
-
-			read(clt_sock, type, MAX);
-			//printf("type: %s\n",type);
-
-			int idx = -1;
-
-			for(int i = 0; i < type_num; i++){
-				if(strcmp(type,type_list[i])==0){
-					write(file_bin, buf, type_size[i]);
-					idx = i;	
-				}
-			}
-			if(idx==-1){
-				if(strchr(type,'*')!=NULL){
-					char* type_tok;
-					char* re_tok;
-					type_tok = strtok(type,"*");
-					re_tok = strtok(NULL,"*");
-					
-					//printf("type_tok:%s, re_tok:%s\n",type_tok, re_tok);	
-
-					for(int i = 0; i < type_num; i++){
-						if(strcmp(re_tok,type_list[i])==0){
-							write(file_bin, buf, type_size[i] * atoi(type_tok));
-						}
-					}
-				}
-				else write(file_bin, buf, atoi(type));
-			}
-			send(clt_sock, type, strlen(type), 0);
-			
-			close(file_bin);
-		}
-		close(clt_sock);
+		printf("not yet...\n");
+		if(clt_sock !=-1)break;
 
 	}
-/*	printf("Quit? (y/n) >");
-	char qq;
-	scanf("%s", &qq);
-	if(qq == 'y'){
-		close(svr_sock);
-		return 0;
-	}
-}*/
-	close(svr_sock);
-	return 0;
-
+                //error_handling("accept() error");
 }
 
-void error_handling(char *message) {
-	fputs(message, stderr);
-	fputc('\n', stderr);
-	exit(1);
+void recv_file(int port){
+
+	struct stat file_info;
+
+	int file_bin,left_size, file_size;
+
+	char buf[MAX];
+	char recv_file_name[MAX];
+
+	cnct_client(port);
+
+	memset(recv_file_name, 0x00, MAX);
+
+	recv(clt_sock, recv_file_name,MAX,0);
+
+	file_bin = open(recv_file_name, O_WRONLY | O_CREAT |O_TRUNC, 0700);
+
+	if(!file_bin) {
+		perror("file open error : ");
+		exit(1);
+	}
+	else send(clt_sock, recv_file_name,strlen(recv_file_name),0);
+
+	memset(buf, 0x00, MAX);
+
+	recv(clt_sock, buf,MAX,0);
+
+	file_size = atoi(buf);
+
+	send(clt_sock, "ok",strlen("ok"),0);
+
+	while(1){
+
+		memset(buf, 0x00, MAX);
+
+		left_size = read(clt_sock, buf, MAX);
+
+		write(file_bin, buf, left_size);
+
+		stat(recv_file_name,&file_info);
+
+		if(file_info.st_size >= file_size){
+
+			write(clt_sock, "good", strlen("good"));
+			break;
+		}
+	}
+	close(file_bin);
+
+	close(clt_sock);
+	close(svr_sock);
+}
+void recv_msg(int port){
+	cnct_client(port);
+
+	memset(buf_msg, 0x00, MAX);
+
+	read(clt_sock, buf_msg, MAX);
+
+	send(clt_sock, buf_msg,strlen(buf_msg),0);
+	
+	close(clt_sock);
+        close(svr_sock);
+}
+void send_file(int port, char* file_name){
+
+	int file_bin, file_size, left_size;
+
+	char buf[MAX];
+
+	struct stat file_info;
+
+	cnct_client(port);
+
+	file_bin = open(file_name, O_RDONLY);
+
+	stat(file_name, &file_info);
+
+	if(!file_bin) {
+		perror("Error : ");
+		exit(1);
+	}
+
+	send(clt_sock, file_name,strlen(file_name),0);
+
+	memset(buf, 0x00, MAX);
+
+	recv(clt_sock, buf,MAX,0);
+
+	sprintf(buf,"%ld",file_info.st_size);
+
+	send(clt_sock, buf,strlen(buf),0);
+	
+	memset(buf, 0x00, MAX);
+
+	recv(clt_sock, buf,MAX,0);
+
+	while(1) {
+		memset(buf, 0x00, MAX);
+		left_size = read(file_bin, buf, MAX);
+		send(clt_sock, buf, left_size,0);//file content
+
+		if(left_size == EOF | left_size == 0) {
+			break;
+		}
+	}
+	memset(buf, 0x00, MAX);
+
+	recv(clt_sock, buf,MAX,0);
+
+	close(file_bin);
+
+	close(clt_sock);
+
+	close(svr_sock);
+}
+void send_msg(int port, char* message){
+
+	cnct_client(port);
+
+	char buf[MAX];
+
+	send(clt_sock, message,strlen(message),0);
+
+	memset(buf, 0x00, MAX);
+
+	read(clt_sock, buf, MAX);
+
+	close(clt_sock);
+	close(svr_sock);
 }
