@@ -12,7 +12,7 @@
 
 #define MAX 1024
 #define crown_ip "192.168.0.150"
-#define crown_port 2024
+#define crown_port 2083
 
 void error_handling(char *message);
 
