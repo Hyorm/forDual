@@ -30,7 +30,7 @@ int main(int argc, char ** argv){
 	char* type_list[type_num] = {"size_t","long long", "char", "int", "value_t", "Value_t","addr_t", "unsigned int"};
 	int type_size[type_num] = {sizeof(size_t),sizeof(long long),sizeof(char),sizeof(int),sizeof(long long int), 24,sizeof(unsigned long int), sizeof(unsigned int)};
 
-	if(argc!=2){
+	if(argc<1){
 
 		printf("Usage : %s <port>\n", argv[0]);
 		exit(1);
