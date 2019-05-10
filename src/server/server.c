@@ -33,7 +33,7 @@ int main(int argc, char** argv){
 
 	char cmd[MAX];
 
-        if(argc <3){
+        if(argc <1){
                  printf("Usage : %s [port: number]\n", argv[0]);
                  exit(1);
         }
