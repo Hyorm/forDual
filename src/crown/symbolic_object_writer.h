@@ -46,6 +46,7 @@ public:
 
 	void send_server_object(char* message, char* type) const;
 
+	char* replace_all(char* s, const char *olds, const char*news)const;
 	const std::vector<Write>& writes() const{ return writes_;}
 
 	//Debuggind

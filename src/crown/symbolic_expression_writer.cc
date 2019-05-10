@@ -75,55 +75,15 @@ void SymbolicExprWriter::Serialize(ostream &os, char c) const {
 
 void SymbolicExprWriter::send_server_expr(char* message, char* type) const {
 
-	//printf("send_server_expr message: .%s. type: .%s.\n", message, type);
+	//printf("send_server_expr\n");
 
         char cmd[size_MAX];
 
         memset(cmd, 0x00, size_MAX);
-	
-	message= replace_all(message, "\'", "\\\'");
-	message= replace_all(message, "\"", "\\\"");
-	message = replace_all(message, "\`", "\\\`");
-	//printf("message: %s\n", message);	
+
 	sprintf(cmd,"%s%s%s%s%s","tcp_client 2 \"",message,"\" \"", type,"\"");
+
         system(cmd);
-}
-
-char* SymbolicExprWriter::replace_all(char* s, const char *olds, const char*news)const{
-	char *result, *sr;
-	size_t i , count = 0;
-	size_t old_len = strlen(olds);
-	size_t new_len = strlen(news);
-
-	if(old_len<1) return s;
-	
-	if(new_len != old_len){
-	
-		for(i = 0; s[i]!='\0';){
-			
-			if(memcmp(&s[i], olds, old_len)==0){
-			       	count++; 
-				i+= old_len;
-			}else i++;
-		}
-	}else i = strlen(s);
-
-	result = (char*)malloc(i+1 + count*(new_len - old_len));
-
-	if(result == NULL) return NULL;
-
-	sr = result;
-
-	while(*s){
-		if(memcmp(s, olds, old_len)==0){
-			memcpy(sr, news, new_len);
-			sr += new_len;
-			s += old_len;
-		}else *sr++ = *s++;
-	}
-
-	*sr = '\0';
-	return result;
 }
 
 }  // namespace crown

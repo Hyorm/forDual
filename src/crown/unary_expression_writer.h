@@ -26,6 +26,7 @@ public:
 	bool IsConcrete() const { return false; }
 	void send_server(char* message, char* type) const;
 
+	char* replace_all(char* s, const char *olds, const char*news)const;
 	const UnaryExprWriter* CastUnaryExprWriter() const { return this; }
 
 	// Accessors

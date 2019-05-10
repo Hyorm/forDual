@@ -34,6 +34,7 @@ public:
 
 	void concretize(addr_t addr, size_t n);
 
+	char* replace_all(char* s, const char *olds, const char*news)const;
 	void send_server_memory(char* message, char* type) const;
 
 	void Serialize(ostream &os) const;

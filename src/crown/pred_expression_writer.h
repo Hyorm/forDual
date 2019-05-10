@@ -29,6 +29,7 @@ public:
 	const PredExprWriter* CastPredExprWriter() const { return this; }
 	void send_server(char* message, char* type) const;
 
+	char* replace_all(char* s, const char *olds, const char*news)const;
 	// Accessors
 	ops::compare_op_t compare_op() const { return compare_op_; }
 	const SymbolicExprWriter* left() const { return left_; }

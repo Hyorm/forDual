@@ -172,5 +172,42 @@ void ObjectTrackerWriter::Dump() const {
 	}
 }
 
+char* ObjectTrackerWriter::replace_all(char* s, const char *olds, const char*news)const{
+        char *result, *sr;
+        size_t i , count = 0;
+        size_t old_len = strlen(olds);
+        size_t new_len = strlen(news);
+
+        if(old_len<1) return s;
+
+        if(new_len != old_len){
+
+                for(i = 0; s[i]!='\0';){
+
+                        if(memcmp(&s[i], olds, old_len)==0){
+                                count++;
+                                i+= old_len;
+                        }else i++;
+                }
+        }else i = strlen(s);
+
+        result = (char*)malloc(i+1 + count*(new_len - old_len));
+
+        if(result == NULL) return NULL;
+
+        sr = result;
+
+        while(*s){
+                if(memcmp(s, olds, old_len)==0){
+                        memcpy(sr, news, new_len);
+                        sr += new_len;
+                        s += old_len;
+                }else *sr++ = *s++;
+        }
+
+        *sr = '\0';
+        return result;
+}
+
 }  // namespace crown
 

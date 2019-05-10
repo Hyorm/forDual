@@ -26,6 +26,7 @@ public:
 	void Serialize(ostream &os) const;
 	void send_server(char* message, char* type) const;
 
+	char* replace_all(char* s, const char *olds, const char*news)const;
 	bool IsConcrete() const { return false; }
 
 	const BinExprWriter* CastBinExprWriter() const { return this; }

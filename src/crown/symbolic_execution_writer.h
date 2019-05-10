@@ -43,6 +43,7 @@ public:
 
 	void send_server_exec(char* message, char* type) const;
 
+	char* replace_all(char* s, const char *olds, const char*news)const;
 	void Serialize(ostream &os, const ObjectTrackerWriter* tracker) const;
   const vector<string>& var_names() const { return var_names_; }
   const vector<Loc_t>& locations() const { return locations_; }
