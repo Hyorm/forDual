@@ -50,6 +50,13 @@ int main(int argc, char ** argv){
 	serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
 	serv_addr.sin_port=htons(atoi(argv[1]));
 
+	const int on = 1;
+        if (setsockopt(svr_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) {
+        
+		fprintf(stderr, "socket error: %s\n", strerror(errno));
+
+	}
+
 	if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
 		error_handling("bind() error");
 

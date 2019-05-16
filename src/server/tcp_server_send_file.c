@@ -14,6 +14,7 @@
 
 void error_handling(char *message);
 
+void cnct_server(int port);
 void cnct_client(int port);
 
 void send_file(int port, char* file_name);
@@ -28,7 +29,12 @@ int main(int argc, char** argv){
                  exit(1);
         }
 
+	cnct_server(atoi(argv[1]));
+
 	send_file(atoi(argv[1]), argv[2]);
+
+	close(svr_sock);
+		
 
 }
 void error_handling(char *message) {
@@ -39,12 +45,9 @@ void error_handling(char *message) {
   
 
 
-void cnct_client(int port){
-
-        int clnt_addr_size;
+void cnct_server(int port){
 
         struct sockaddr_in serv_addr;
-        struct sockaddr_in clnt_addr;
 
         svr_sock=socket(PF_INET, SOCK_STREAM, 0);
 
@@ -57,11 +60,23 @@ void cnct_client(int port){
         serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
         serv_addr.sin_port=htons(port);
 
-        if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
-                error_handling("bind() error");
+	const int on = 1;
+        if (setsockopt(svr_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) {
+        
+		error_handling("bind() error");
+	}
+
+	if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
+		error_handling("bind() error");
+
 
         if(listen(svr_sock, 5)==-1)
                 error_handling("listen() error");
+}
+void cnct_client(int port){
+
+	int clnt_addr_size;
+	struct sockaddr_in clnt_addr;
 
         clnt_addr_size=sizeof(clnt_addr);
 
@@ -83,6 +98,7 @@ void send_file(int port, char* file_name){
         struct stat file_info;
 
         cnct_client(port);
+	printf("file name:.%s.\n", file_name);
 
         file_bin = open(file_name, O_RDONLY);
 
@@ -98,23 +114,30 @@ void send_file(int port, char* file_name){
 
         recv(clt_sock, buf,MAX,0);
 
+	file_size = file_info.st_size;
+
         sprintf(buf,"%ld",file_info.st_size);
 
+	printf("buf(file_size) %d, %d\n", atoi(buf), file_size);
         send(clt_sock, buf,strlen(buf),0);
 
         memset(buf, 0x00, MAX);
 
         recv(clt_sock, buf,MAX,0);
 
-        while(1) {
-                memset(buf, 0x00, MAX);
-                left_size = read(file_bin, buf, MAX);
-                send(clt_sock, buf, left_size,0);//file content
-
-                if(left_size == EOF | left_size == 0) {
-                        break;
-                }
-        }
+	if(file_size != 0){
+	
+        	while(1) {
+        	        memset(buf, 0x00, MAX);
+        	        left_size = read(file_bin, buf, MAX);
+			printf("ho\n");
+        	        send(clt_sock, buf, left_size,0);//file content
+	
+	                if(left_size == EOF | left_size == 0) {
+	                        break;
+	                }
+	        }
+	}
         memset(buf, 0x00, MAX);
 
         recv(clt_sock, buf,MAX,0);
@@ -122,6 +145,7 @@ void send_file(int port, char* file_name){
         close(file_bin);
 
         close(clt_sock);
+	
 
-        close(svr_sock);
+        
 }

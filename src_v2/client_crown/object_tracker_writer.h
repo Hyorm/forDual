@@ -40,7 +40,6 @@ public:
 	void storeObj(addr_t addr);
 	
 	void Serialize(ostream &os) const;
-	char* replace_all(char* s, const char *olds, const char*news)const;
 	void send_server_tracker(char* message, char* type) const;
 
 	SymbolicObjectWriter* find(addr_t addr) const;

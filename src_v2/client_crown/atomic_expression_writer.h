@@ -38,7 +38,6 @@ public:
 
 	const AtomicExprWriter* CastAtomicExprWriter() const { return this; }
 
-	char* replace_all(char* s, const char *olds, const char*news)const;
 
 	// Accessor.
 	var_t variable() const { return var_; }

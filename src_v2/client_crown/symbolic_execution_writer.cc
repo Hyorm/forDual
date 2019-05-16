@@ -14,10 +14,20 @@
 #include <string.h>
 #include <climits>
 #include <assert.h>
+#include <cstring>
+#include <string>
+
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <sys/socket.h>
+#include <sys/types.h>
+#include <unistd.h>
 
 #include "libcrown/symbolic_execution_writer.h"
 
 #define size_MAX 1024
+#define ipAddress "192.168.0.150"
+#define portNum "3030"
 
 namespace crown {
 
@@ -116,57 +126,64 @@ void SymbolicExecutionWriter::Serialize(ostream &os, const ObjectTrackerWriter* 
 
 void SymbolicExecutionWriter::send_server_exec(char* message, char* type) const{
 
-	//printf("send_server_exec\n");
+	printf("send_server_exec message: .%s. type: .%s.\n", message, type);
+	addrinfo hints, *p;
+    memset(&hints, 0, sizeof(hints));
+    hints.ai_family   = AF_UNSPEC;
+    hints.ai_socktype = SOCK_STREAM;
+    hints.ai_flags    = AI_PASSIVE;
 
-	char cmd[size_MAX];
+    int gAddRes = getaddrinfo(ipAddress, portNum, &hints, &p);
+    if (gAddRes != 0) {
+        std::cerr << gai_strerror(gAddRes) << "\n";
+        exit(1);
+    }
 
-	memset(cmd, 0x00, size_MAX);
+    if (p == NULL) {
+        std::cerr << "No addresses found\n";
+        exit(1);
+    }
 
-	message= replace_all(message, "\'", "\\\'");
-        message= replace_all(message, "\"", "\\\"");
-        message = replace_all(message, "\`", "\\\`");
+    int sockFD = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+    if (sockFD == -1) {
+        std::cerr << "Error while creating socket\n";
+        exit(1);
+    }
 
-	//printf("message: .%s., type: .%s.\n", message, type);
-	sprintf(cmd,"%s%s%s%s%s","tcp_client 2 \"",message,"\" \"", type,"\"");
+    int connectR = connect(sockFD, p->ai_addr, p->ai_addrlen);
+    if (connectR == -1) {
+        close(sockFD);
+        std::cerr << "Error while connecting socket\n";
+        exit(1);
+    }
 
-	system(cmd);
-}
+    char buf[size_MAX];
+    memset(buf, 0x00, size_MAX);
 
-char* SymbolicExecutionWriter::replace_all(char* s, const char *olds, const char*news)const{
-        char *result, *sr;
-        size_t i , count = 0;
-        size_t old_len = strlen(olds);
-        size_t new_len = strlen(news);
 
-        if(old_len<1) return s;
+    //if(strlen(message) == 0)
+    if(message==NULL)
+            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
+    else
+        auto bytes_sent = send(sockFD, message, strlen(message), 0);
 
-        if(new_len != old_len){
+    memset(buf, 0x00, size_MAX);
+    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
+    if (bytes_recv == -1) {
+        std::cerr << "Error while receiving bytes\n";
+        exit(1);
+    }
+    auto bytes_sent = send(sockFD, type, strlen(type), 0);
 
-                for(i = 0; s[i]!='\0';){
+    memset(buf, 0x00, size_MAX);
+    bytes_recv = recv(sockFD, buf, size_MAX, 0);
+    if (bytes_recv == -1) {
+        std::cerr << "Error while receiving bytes\n";
+        exit(1);
+    }
 
-                        if(memcmp(&s[i], olds, old_len)==0){
-                                count++;
-                                i+= old_len;
-                        }else i++;
-                }
-        }else i = strlen(s);
-
-        result = (char*)malloc(i+1 + count*(new_len - old_len));
-
-        if(result == NULL) return NULL;
-
-        sr = result;
-
-        while(*s){
-                if(memcmp(s, olds, old_len)==0){
-                        memcpy(sr, news, new_len);
-                        sr += new_len;
-                        s += old_len;
-                }else *sr++ = *s++;
-        }
-
-        *sr = '\0';
-        return result;
+    close(sockFD);
+    freeaddrinfo(p);
 }
 
 }  // namespace crown

@@ -37,7 +37,6 @@ public:
 	const size_t managerIdx_;
 	const size_t snapshotIdx_;
 
-	char* replace_all(char* s, const char *olds, const char*news)const;
 private:
 	// The symbolic object corresponding to the dereference.
 	const SymbolicObjectWriter *object_;

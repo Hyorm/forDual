@@ -49,7 +49,6 @@ public:
 
 	void send_server_path(char* message, char* type) const;
 
-	char* replace_all(char* s, const char *olds, const char*news)const;
 	const vector<branch_id_t>& branches() const { return branches_; }
 	const vector<SymbolicExprWriter*>& constraints() const { return constraints_; }
 	const vector<size_t>& constraints_idx() const { return constraints_idx_; }

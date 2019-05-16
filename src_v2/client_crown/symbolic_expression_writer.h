@@ -56,7 +56,6 @@ public:
 	virtual const DerefExprWriter* CastDerefExprWriter() const { return NULL; }
 	virtual const PredExprWriter* CastPredExprWriter() const { return NULL; }
 	virtual const AtomicExprWriter* CastAtomicExprWriter() const { return NULL; }
-	char* replace_all(char* s, const char *olds, const char*news)const;
 
 	// Accessors.
 	Value_t value() const { return value_; }

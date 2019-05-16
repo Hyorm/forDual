@@ -30,6 +30,8 @@ int main(int argc, char** argv){
 
 	send_msg(atoi(argv[1]), argv[2]);
 
+	close(svr_sock);
+	
 }
 void error_handling(char *message) {
         fputs(message, stderr);
@@ -56,6 +58,12 @@ void cnct_client(int port){
         serv_addr.sin_family=AF_INET;
         serv_addr.sin_addr.s_addr=htonl(INADDR_ANY);
         serv_addr.sin_port=htons(port);
+
+	const int on = 1;
+	if (setsockopt(svr_sock, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on))) {
+
+                fprintf(stderr, "socket error: %s\n", strerror(errno));
+        }
 
         if(bind(svr_sock, (struct sockaddr*) &serv_addr, sizeof(serv_addr))==-1)
                 error_handling("bind() error");
@@ -86,5 +94,7 @@ void send_msg(int port, char* message){
         read(clt_sock, buf, MAX);
 
         close(clt_sock);
-        close(svr_sock);
+      	
+	close(svr_sock);
+	
 }
