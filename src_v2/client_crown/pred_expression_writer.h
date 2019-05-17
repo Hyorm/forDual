@@ -27,7 +27,7 @@ public:
 	bool IsConcrete() const { return false; }
 
 	const PredExprWriter* CastPredExprWriter() const { return this; }
-	void send_server(char* message, char* type) const;
+	void send_server(char* message) const;
 
 	// Accessors
 	ops::compare_op_t compare_op() const { return compare_op_; }

@@ -48,7 +48,7 @@ public:
 	// Value | size | Node type | operator/var | children
 	virtual void Serialize(ostream& os) const;
 
-	void send_server_expr(char* message, char* type) const;
+	void send_server_expr(char* message) const;
 
 	// Virtual methods for dynamic casting.
 	virtual const UnaryExprWriter* CastUnaryExprWriter() const { return NULL; }

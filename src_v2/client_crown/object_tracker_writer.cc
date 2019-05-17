@@ -149,11 +149,11 @@ SymbolicObjectWriter* ObjectTrackerWriter::find(addr_t addr) const {
 
 void ObjectTrackerWriter::Serialize(ostream &os) const {
 	size_t managerSize = snapshotManager_.size();
-	os.write((char*)&managerSize, sizeof(size_t)); send_server_tracker((char*)&managerSize, "size_t");
+	os.write((char*)&managerSize, sizeof(size_t)); send_server_tracker((char*)&managerSize); send_server_tracker("size_t");
 	for(size_t i = 0; i < managerSize; i++){
 		size_t objsSize = snapshotManager_[i]->size();
 
-		os.write((char*)&objsSize, sizeof(size_t)); send_server_tracker((char*)&objsSize, "size_t");
+		os.write((char*)&objsSize, sizeof(size_t)); send_server_tracker((char*)&objsSize); send_server_tracker( "size_t");
 		for(size_t j = 0; j < objsSize; j++){
 			snapshotManager_[i]->at(j)->Serialize(os);
 		}
@@ -161,9 +161,9 @@ void ObjectTrackerWriter::Serialize(ostream &os) const {
 
 }
 
-void ObjectTrackerWriter::send_server_tracker(char* message, char* type) const {
+void ObjectTrackerWriter::send_server_tracker(char* message) const {
 
-	printf("send_server_tracker message: .%s. type: .%s.\n", message, type);
+	printf("send_server_tracker message: .%s.\n", message);
 	addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -194,29 +194,40 @@ void ObjectTrackerWriter::send_server_tracker(char* message, char* type) const {
         exit(1);
     }
 
-    char buf[size_MAX];
+    	int s, len ;
+	char * data ;
+
+	char buf[size_MAX];
     memset(buf, 0x00, size_MAX);
 
-    //if(strlen(message) == 0)
-    if(message==NULL)
-            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-        auto bytes_sent = send(sockFD, message, strlen(message), 0);
+        data = message ;
+	len = strlen(message) ;
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto bytes_sent = send(sockFD, type, strlen(type), 0);
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	shutdown(sockFD, SHUT_WR) ;
+
+	data = 0x0 ;
+	len = 0 ;
+
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
+
 
     close(sockFD);
     freeaddrinfo(p);

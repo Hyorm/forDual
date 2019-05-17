@@ -22,9 +22,7 @@ int main(int argc, char *argv[])
         std::cerr << "Run program as 'program <port>'\n";
         return -1;
     }
-   
-    std::ofstream out("szd_execution", std::ios::out | std::ios::binary);
-   
+  std::ofstream out("szd_execution", std::ios::out | std::ios::binary); 
     auto &portNum = argv[1];
     const unsigned int backLog = 8;  // number of connections allowed on the incoming queue
 
@@ -94,82 +92,134 @@ int main(int argc, char *argv[])
     }
 
 
-    int listenR = listen(sockFD, backLog);
-    if (listenR == -1) {
-        std::cerr << "Error while Listening on socket\n";
-        close(sockFD);
-        freeaddrinfo(res);
-        return -6;
-    }
-
-    sockaddr_storage client_addr;
-    socklen_t client_addr_size = sizeof(client_addr);
-
-
     char buf[MAX];
     char type[MAX];
+	int numnum = 1;
+	char * data = 0x0, * tdata = 0x0 ;
+   	int s ; 
+	int len = 0 ;
+	int inin;
+   while (1) {
+	int listenR = listen(sockFD, backLog);
+	if (listenR == -1) {
+	        std::cerr << "Error while Listening on socket\n";
+	        close(sockFD);
+	        freeaddrinfo(res);
+	        return -6;
+	    }
 
-    while (1) {
+	sockaddr_storage client_addr;
+	socklen_t client_addr_size = sizeof(client_addr);
 
-        int newFD
-          = accept(sockFD, (sockaddr *) &client_addr, &client_addr_size);
+        int newFD = accept(sockFD, (sockaddr *) &client_addr, &client_addr_size);
         if (newFD == -1) {
             std::cerr << "Error while Accepting on socket\n";
             continue;
         }
-	memset(buf, 0x00, MAX);
-	auto bytes_recv = recv(newFD, buf, MAX, 0);
+	if(numnum == 1){
 
-	printf("buf %s\n", buf);
-        auto bytes_sent = send(newFD, buf, strlen(buf), 0);
-
-	if(strcmp(buf, "szd_done")==0){
-		close(newFD);
-		break;
-	}
-	if(strcmp(buf, "crown_NULL")==0){
+		data = 0x0;
+		len = 0;
 		memset(buf, 0x00, MAX);
-		sprintf(buf,"%s","");
+	inin = 0;
+	while ( (s = recv(newFD, buf, MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		inin = 1;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
 	}
 
+	len = strlen("hoho");
+	while (len > 0 && (s = send(newFD, "hoho",len, 0)) > 0) {
+		//data += s ;
+		len -= s ;
+	}
+	shutdown(newFD, SHUT_WR) ;
+
+
+
+	numnum = 0;
+
+	if(data == NULL)printf("hehe\n");
+
+	if(inin==1){
+		sprintf(buf, "%s", data);
+		if(strcmp(buf, "szd_done")==0){
+			close(newFD);
+			break;
+		}
+	}
+	}
+	else{
+	numnum = 1;
+
+	len = 0 ;
 	memset(type, 0x00, MAX);
-	bytes_recv = recv(newFD, type, MAX, 0);
+	tdata = 0x0 ;
+
+	while ( (s = recv(newFD, type, MAX-1, 0)) > 0 ) {
+		type[s] = 0x0 ;
+		if (tdata == 0x0) {
+			tdata = strdup(type) ;
+			len = s ;
+		}
+		else {
+			tdata = (char*)realloc(tdata, len + s + 1) ;
+			strncpy(tdata + len, type, s) ;
+			tdata[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
+	printf("type: %s\n", tdata) ;
 
 	int idx = -1;
 
                         for(int i = 0; i < type_num; i++){
-                                if(strcmp(type,type_list[i])==0){
-                                        out.write(buf, type_size[i]);
+                                if(strcmp(tdata,type_list[i])==0){
+					printf("write\n");
+                                        out.write(data, type_size[i]);
+					printf("w\n");
                                         idx = i;
                                 }
                         }
                         if(idx==-1){
-                                if(strchr(type,'*')!=NULL){
+                                if(strchr(tdata,'*')!=NULL){
                                         char* type_tok;
                                         char* re_tok;
-                                        type_tok = strtok(type,"*");
+                                        type_tok = strtok(tdata,"*");
                                         re_tok = strtok(NULL,"*");
 
                                         //printf("type_tok:%s, re_tok:%s\n",type_tok, re_tok);
 
                                         for(int i = 0; i < type_num; i++){
                                                 if(strcmp(re_tok,type_list[i])==0){
-                                                        out.write(buf, type_size[i] * atoi(type_tok));
-                                                }
+							printf("write\n");
+                                                        out.write(data, type_size[i] * atoi(type_tok));
+                                                	printf("w\n");
+						}
                                         }
                                 }
-                                else out.write( buf, atoi(type));
+                                else {printf("write\n");out.write(data, atoi(tdata));printf("w\n");}
                         }
 
-	printf("type %s\n", type);
-	bytes_sent = send(newFD, type, strlen(type), 0);
-
-
-        close(newFD);
-	if(strcmp(buf, "szd_done")==0)break;
+	len = strlen(tdata);
+	while (len > 0 && (s = send(newFD, tdata, len, 0)) > 0) {
+		tdata += s ;
+		len -= s ;
+	}
+	shutdown(newFD, SHUT_WR) ;
+	}
     }
 
-    out.close();
+   out.close();
     close(sockFD);
     freeaddrinfo(res);
 

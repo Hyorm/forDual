@@ -32,7 +32,7 @@ public:
 
 	void AppendToString(string* s) const;
 	void Serialize(ostream &os) const;
-	void send_server(char* message, char* type) const;
+	void send_server(char* message) const;
 	bool IsConcrete() const { return false; }
 
 

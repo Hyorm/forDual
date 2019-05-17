@@ -31,7 +31,7 @@ public:
 	const DerefExprWriter* CastDerefExprWriter() const { return this; }
 	void Serialize(ostream &os) const;
 
-	void send_server(char* message, char* type) const;
+	void send_server(char* message) const;
 
 	//select one region from many regions (manager), and select specific obj from series of objs
 	const size_t managerIdx_;

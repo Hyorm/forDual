@@ -72,18 +72,18 @@ void SymbolicExprWriter::Serialize(ostream &os) const {
 
 void SymbolicExprWriter::Serialize(ostream &os, char c) const {
 
-	os.write((char*)&value_, sizeof(Value_t)); send_server_expr((char*)&value_, "Value_t");
-	os.write((char*)&size_, sizeof(size_t)); send_server_expr((char*)&size_, "size_t");
-	os.write((char*)&unique_id_, sizeof(size_t)); send_server_expr((char*)&unique_id_, "size_t");
+	os.write((char*)&value_, sizeof(Value_t)); send_server_expr((char*)&value_); send_server_expr( "Value_t");
+	os.write((char*)&size_, sizeof(size_t)); send_server_expr((char*)&size_); send_server_expr( "size_t");
+	os.write((char*)&unique_id_, sizeof(size_t)); send_server_expr((char*)&unique_id_); send_server_expr( "size_t");
 
 	IFDEBUG(std::cerr<<"SerializeInSymExpr: "<<value_.type<<" "<<value_.integral<<" "<<value_.floating<<" size:"<<(size_t)size_<<" nodeTy:"<<(int)c<<" id:"<<unique_id_<<std::endl);
 	
-	os.write(&c, sizeof(char)); send_server_expr(&c, "char");
+	os.write(&c, sizeof(char)); send_server_expr(&c); send_server_expr( "char");
 }
 
-void SymbolicExprWriter::send_server_expr(char* message, char* type) const {
+void SymbolicExprWriter::send_server_expr(char* message) const {
 
-	printf("send_server_expr message: .%s. type: .%s.\n", message, type);
+	printf("send_server_expr message: .%s.\n", message);
 	addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -114,30 +114,39 @@ void SymbolicExprWriter::send_server_expr(char* message, char* type) const {
         exit(1);
     }
 
-    char buf[size_MAX];
+    	int s, len ;
+	char * data ;
+
+	char buf[size_MAX];
     memset(buf, 0x00, size_MAX);
+        data = message ;
+	len = strlen(message) ;
 
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
 
-    //if(strlen(message) == 0)
-    if(message==NULL)
-            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-        auto bytes_sent = send(sockFD, message, strlen(message), 0);
+	shutdown(sockFD, SHUT_WR) ;
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto bytes_sent = send(sockFD, type, strlen(type), 0);
+	data = 0x0 ;
+	len = 0 ;
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
+
 
     close(sockFD);
     freeaddrinfo(p);

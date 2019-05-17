@@ -24,7 +24,7 @@ public:
 	void Serialize(ostream &os) const;
 
 	bool IsConcrete() const { return false; }
-	void send_server(char* message, char* type) const;
+	void send_server(char* message) const;
 
 	const UnaryExprWriter* CastUnaryExprWriter() const { return this; }
 

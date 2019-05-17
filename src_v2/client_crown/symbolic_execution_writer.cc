@@ -68,50 +68,50 @@ void SymbolicExecutionWriter::Serialize(ostream &os, const ObjectTrackerWriter* 
 
 	char nbr[size_MAX]; 
 
-	os.write((char*)&len, sizeof(len)); send_server_exec((char*)&len, "size_t");
+	os.write((char*)&len, sizeof(len)); send_server_exec((char*)&len);send_server_exec("size_t");
 
 	for (VarIt i = vars_.begin(); i != vars_.end(); ++i) {
         //i->first means index of variable.
         //i->second means type of variable.
 		name_len = var_names_[i->first].length();
-		os.write((char *)&name_len, sizeof(name_len)); send_server_exec((char*)&name_len, "size_t");
+		os.write((char *)&name_len, sizeof(name_len)); send_server_exec((char*)&name_len);send_server_exec("size_t");
 
 		memset(nbr, 0x00, size_MAX);
 		sprintf(nbr, "%d", name_len);
-		os.write((char*)(var_names_[i->first].c_str()), name_len); send_server_exec((char*)(var_names_[i->first].c_str()), nbr);
+		os.write((char*)(var_names_[i->first].c_str()), name_len); send_server_exec((char*)(var_names_[i->first].c_str()));send_server_exec(nbr);
 
 
 
-		os.write((char*) &(values_[i->first]), sizeof(long long)); send_server_exec((char*) &(values_[i->first]), "long long");
-		os.write((char*) &(indexSize_[i->first]), sizeof(char)); send_server_exec((char*) &(indexSize_[i->first]), "char");
-		os.write((char*) &(h_[i->first]), sizeof(char));  send_server_exec((char*) &(h_[i->first]), "char");
-		os.write((char*) &(l_[i->first]), sizeof(char)); send_server_exec((char*) &(l_[i->first]), "char");
+		os.write((char*) &(values_[i->first]), sizeof(long long)); send_server_exec((char*) &(values_[i->first]));send_server_exec("long long");
+		os.write((char*) &(indexSize_[i->first]), sizeof(char)); send_server_exec((char*) &(indexSize_[i->first]));send_server_exec("char");
+		os.write((char*) &(h_[i->first]), sizeof(char));  send_server_exec((char*) &(h_[i->first]));send_server_exec("char");
+		os.write((char*) &(l_[i->first]), sizeof(char)); send_server_exec((char*) &(l_[i->first]));send_server_exec("char");
 
 		exprs_[i->first]->Serialize(os);
-		os.write((char*)&(locations_[i->first].lineno), sizeof(int)); send_server_exec((char*)&(locations_[i->first].lineno), "int");
+		os.write((char*)&(locations_[i->first].lineno), sizeof(int)); send_server_exec((char*)&(locations_[i->first].lineno));send_server_exec("int");
 
     name_len = (locations_[i->first].fname).length();
-		os.write((char*)&name_len, sizeof(name_len)); send_server_exec((char*)&name_len, "size_t");
+		os.write((char*)&name_len, sizeof(name_len)); send_server_exec((char*)&name_len);send_server_exec( "size_t");
 
 		memset(nbr, 0x00, size_MAX);
 		sprintf(nbr, "%d", name_len);
-    os.write((char*)((locations_[i->first].fname).c_str()), name_len);send_server_exec((char*)((locations_[i->first].fname).c_str()), nbr);
+    os.write((char*)((locations_[i->first].fname).c_str()), name_len);send_server_exec((char*)((locations_[i->first].fname).c_str()));send_server_exec( nbr);
 
 		char ch = static_cast<char>(i->second);
-		os.write(&ch, sizeof(char)); send_server_exec(&ch, "char");
+		os.write(&ch, sizeof(char)); send_server_exec(&ch);send_server_exec( "char");
 
 		if(i->second == types::FLOAT){
 			float tmp = (float)inputs_[i->first].floating;
 
 			memset(nbr, 0x00, size_MAX);
 			sprintf(nbr, "%d", kSizeOfType[i->second]);
-			os.write((char*)&tmp, kSizeOfType[i->second]);send_server_exec((char*)&tmp, nbr);
+			os.write((char*)&tmp, kSizeOfType[i->second]);send_server_exec((char*)&tmp);send_server_exec( nbr);
 		}else if(i->second == types::DOUBLE){
 			memset(nbr, 0x00, size_MAX);
 			sprintf(nbr, "%d", kSizeOfType[i->second]);
-			os.write((char*)&inputs_[i->first].floating, kSizeOfType[i->second]); send_server_exec((char*)&inputs_[i->first].floating, nbr);
+			os.write((char*)&inputs_[i->first].floating, kSizeOfType[i->second]); send_server_exec((char*)&inputs_[i->first].floating);send_server_exec( nbr);
 		}else{
-			os.write((char*)&inputs_[i->first].integral, sizeof(value_t));send_server_exec((char*)&inputs_[i->first].integral, "value_t");
+			os.write((char*)&inputs_[i->first].integral, sizeof(value_t));send_server_exec((char*)&inputs_[i->first].integral);send_server_exec( "value_t");
 		}
 
 	}
@@ -124,9 +124,10 @@ void SymbolicExecutionWriter::Serialize(ostream &os, const ObjectTrackerWriter* 
 
 }
 
-void SymbolicExecutionWriter::send_server_exec(char* message, char* type) const{
+void SymbolicExecutionWriter::send_server_exec(char* message) const{
 
-	printf("send_server_exec message: .%s. type: .%s.\n", message, type);
+	if(message == NULL)printf("hehe\n");
+	printf("send_server_exec message: .%s.\n", message);
 	addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -157,30 +158,38 @@ void SymbolicExecutionWriter::send_server_exec(char* message, char* type) const{
         exit(1);
     }
 
-    char buf[size_MAX];
+    	int s, len ;
+	char * data ;
+	char buf[size_MAX];
     memset(buf, 0x00, size_MAX);
 
+        data = message ;
+	len = strlen(message) ;
 
-    //if(strlen(message) == 0)
-    if(message==NULL)
-            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-        auto bytes_sent = send(sockFD, message, strlen(message), 0);
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto bytes_sent = send(sockFD, type, strlen(type), 0);
+	shutdown(sockFD, SHUT_WR) ;
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	data = 0x0 ;
+	len = 0 ;
+
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
 
     close(sockFD);
     freeaddrinfo(p);

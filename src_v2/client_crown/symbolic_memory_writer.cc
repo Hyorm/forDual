@@ -180,16 +180,16 @@ void SymbolicMemoryWriter::MemElem::Serialize(ostream &os) const {
 		c = (c << 1) | (slots_[i] != NULL);
 	}
 	//s->push_back(c);
-	os.write((char *)&c, sizeof(unsigned int));send_server_memory((char *)&c,"unsigned int");
+	os.write((char *)&c, sizeof(unsigned int));send_server_memory((char *)&c);send_server_memory("unsigned int");
 	
 	for (size_t i = 0; i < kMemElemCapacity; i++) {
 		if (slots_[i] != NULL)
 			slots_[i]->Serialize(os);
 	}
 }
-void SymbolicMemoryWriter::MemElem::send_server_memory(char* message, char* type) const {
+void SymbolicMemoryWriter::MemElem::send_server_memory(char* message) const {
 
-	printf("send_server_MemElem::memory message: .%s. type: .%s.\n", message, type);
+	printf("send_server_MemElem::memory message: .%s.\n", message);
 	addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -220,39 +220,49 @@ void SymbolicMemoryWriter::MemElem::send_server_memory(char* message, char* type
         exit(1);
     }
 
-    char buf[size_MAX];
+    	int s, len ;
+	char * data ;
+
+	char buf[size_MAX];
     memset(buf, 0x00, size_MAX);
 
+        data = message ;
+	len = strlen(message) ;
 
-    //if(strlen(message) == 0)
-    if(message==NULL)
-            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-        auto bytes_sent = send(sockFD, message, strlen(message), 0);
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto bytes_sent = send(sockFD, type, strlen(type), 0);
+	shutdown(sockFD, SHUT_WR) ;
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	data = 0x0 ;
+	len = 0 ;
+
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
+
 
     close(sockFD);
     freeaddrinfo(p);
 
 }
 
-void SymbolicMemoryWriter::send_server_memory(char* message, char* type) const {
+void SymbolicMemoryWriter::send_server_memory(char* message) const {
 
-	printf("send_server_memory message: .%s. type: .%s.\n", message, type);
+	printf("send_server_memory message: .%s.\n", message);
     addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -283,29 +293,40 @@ void SymbolicMemoryWriter::send_server_memory(char* message, char* type) const {
         exit(1);
     }
 
-    char buf[size_MAX];
+    	int s, len ;
+	char * data ;
+
+	char buf[size_MAX];
     memset(buf, 0x00, size_MAX);
 
-    //if(strlen(message) == 0)
-    if(message==NULL)
-            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-        auto bytes_sent = send(sockFD, message, strlen(message), 0);
+        data = message ;
+	len = strlen(message) ;
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto bytes_sent = send(sockFD, type, strlen(type), 0);
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	shutdown(sockFD, SHUT_WR) ;
+
+	data = 0x0 ;
+	len = 0 ;
+
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
+
 
     close(sockFD);
     freeaddrinfo(p);
@@ -403,12 +424,12 @@ void SymbolicMemoryWriter::concretize(addr_t addr, size_t n) {
 void SymbolicMemoryWriter::Serialize(ostream &os) const {
 	// Format is :mem_size() | i | mem_[i]
 	size_t mem_size = mem_.size();
-	os.write((char*)&mem_size, sizeof(size_t)); send_server_memory((char*)&mem_size, "size_t");
+	os.write((char*)&mem_size, sizeof(size_t)); send_server_memory((char*)&mem_size); send_server_memory( "size_t");
 
 	// Now write the memory contents
 	hash_map<addr_t,MemElem>::const_iterator i;
 	for (i = mem_.begin(); i != mem_.end(); ++i) {
-		os.write((char*)&(i->first), sizeof(addr_t));send_server_memory((char*)&(i->first), "addr_t");
+		os.write((char*)&(i->first), sizeof(addr_t));send_server_memory((char*)&(i->first)); send_server_memory( "addr_t");
 		i->second.Serialize(os);
 	}
 }

@@ -107,17 +107,17 @@ void SymbolicPathWriter::Serialize(ostream &os) const{
 
 	memset(nbr, 0x00, size_MAX);
 	sprintf(nbr, "%d%s", branches_.size(),"*int");
-	os.write((char*)&len, sizeof(len)); send_server_path((char*)&len, "size_t"); 
-	os.write((char*)&branches_.front(), branches_.size() * sizeof(branch_id_t)); send_server_path((char*)&branches_.front(), nbr);
+	os.write((char*)&len, sizeof(len)); send_server_path((char*)&len);send_server_path( "size_t"); 
+	os.write((char*)&branches_.front(), branches_.size() * sizeof(branch_id_t)); send_server_path((char*)&branches_.front());send_server_path( nbr);
 
 	// Write the path constraints.
 	len = constraints_.size();
-	os.write((char*)&len, sizeof(len)); send_server_path((char*)&len, "size_t");
+	os.write((char*)&len, sizeof(len)); send_server_path((char*)&len);send_server_path( "size_t");
 
 	memset(nbr, 0x00, size_MAX);
 	sprintf(nbr, "%d%s", constraints_.size(),"*size_t");
 
-	os.write((char*)&constraints_idx_.front(), constraints_.size() * sizeof(size_t)); send_server_path((char*)&constraints_idx_.front(), nbr);
+	os.write((char*)&constraints_idx_.front(), constraints_.size() * sizeof(size_t)); send_server_path((char*)&constraints_idx_.front());send_server_path( nbr);
     
     /*
      * comments written by Hyunwoo Kim (17.07.13)
@@ -126,23 +126,23 @@ void SymbolicPathWriter::Serialize(ostream &os) const{
 
     vector<Loc_t>::const_iterator j = locations_.begin();
 	for (ConIt i = constraints_.begin(); i != constraints_.end(); ++i, ++j) {
-		os.write((char*)&(j->lineno) , sizeof(int));send_server_path((char*)&(j->lineno), "int");
+		os.write((char*)&(j->lineno) , sizeof(int));send_server_path((char*)&(j->lineno));send_server_path("int");
 		len = (j->fname).length();
-		os.write((char*)&len, sizeof(len));send_server_path((char*)&len, "size_t");
+		os.write((char*)&len, sizeof(len));send_server_path((char*)&len);send_server_path("size_t");
 
 
 		memset(nbr, 0x00, size_MAX);
 		sprintf(nbr, "%d", len);
 
-		os.write((char*)((j->fname).c_str()), len);send_server_path((char*)((j->fname).c_str()), nbr);
+		os.write((char*)((j->fname).c_str()), len);send_server_path((char*)((j->fname).c_str()));send_server_path( nbr);
 
 		(*i)->Serialize(os);
 	}
 }
 
-void SymbolicPathWriter::send_server_path(char* message, char* type) const {
+void SymbolicPathWriter::send_server_path(char* message) const {
 
-	printf("send_server_path message: .%s. type: .%s.\n", message, type);
+	printf("send_server_path message: .%s. \n", message);
 	addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
     hints.ai_family   = AF_UNSPEC;
@@ -173,29 +173,39 @@ void SymbolicPathWriter::send_server_path(char* message, char* type) const {
         exit(1);
     }
 
-    char buf[size_MAX];
-    memset(buf, 0x00, size_MAX);
+    	int s, len ;
+	char * data ;
 
-    //if(strlen(message) == 0)
-    if(message==NULL)
-            auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-        auto bytes_sent = send(sockFD, message, strlen(message), 0);
+	char buf[size_MAX];
+memset(buf, 0x00, size_MAX);
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto bytes_sent = send(sockFD, type, strlen(type), 0);
+        data = message ;
+	len = strlen(message) ;
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
+
+	shutdown(sockFD, SHUT_WR) ;
+
+	data = 0x0 ;
+	len = 0 ;
+
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
 
     close(sockFD);
     freeaddrinfo(p);

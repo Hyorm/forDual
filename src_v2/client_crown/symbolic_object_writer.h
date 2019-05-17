@@ -44,7 +44,7 @@ public:
 
 	void Serialize(ostream &os) const;
 
-	void send_server_object(char* message, char* type) const;
+	void send_server_object(char* message) const;
 
 	const std::vector<Write>& writes() const{ return writes_;}
 

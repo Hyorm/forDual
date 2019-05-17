@@ -40,7 +40,7 @@ public:
 	void storeObj(addr_t addr);
 	
 	void Serialize(ostream &os) const;
-	void send_server_tracker(char* message, char* type) const;
+	void send_server_tracker(char* message) const;
 
 	SymbolicObjectWriter* find(addr_t addr) const;
 	bool getDereferredStateOfRegion(addr_t addr) const;

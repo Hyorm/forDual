@@ -47,7 +47,7 @@ public:
 			unsigned int lineno, const char *filename, const char *exp);
 	void Serialize(ostream &os) const;
 
-	void send_server_path(char* message, char* type) const;
+	void send_server_path(char* message) const;
 
 	const vector<branch_id_t>& branches() const { return branches_; }
 	const vector<SymbolicExprWriter*>& constraints() const { return constraints_; }

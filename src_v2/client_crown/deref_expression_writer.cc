@@ -76,16 +76,16 @@ void DerefExprWriter::Serialize(ostream &os) const {
 	//Store the indexes to find object on run_crown
 	size_t managerIdx = object_->managerIdx();
 	size_t snapshotIdx = object_->snapshotIdx();
-	os.write((char*)&managerIdx, sizeof(size_t));send_server((char*)&managerIdx,"size_t");
-	os.write((char*)&snapshotIdx, sizeof(size_t));send_server((char*)&snapshotIdx, "size_t");
+	os.write((char*)&managerIdx, sizeof(size_t));send_server((char*)&managerIdx);send_server("size_t");
+	os.write((char*)&snapshotIdx, sizeof(size_t));send_server((char*)&snapshotIdx);send_server( "size_t");
 
 //	object_->Serialize(os);
 	addr_->Serialize(os);
 }
 
-void DerefExprWriter::send_server(char* message, char* type) const{
+void DerefExprWriter::send_server(char* message) const{
 
-    printf("send_server_Deref message: .%s. type: .%s.\n", message, type);
+    printf("send_server_Deref message: .%s.", message);
 
     addrinfo hints, *p;
     memset(&hints, 0, sizeof(hints));
@@ -117,30 +117,39 @@ void DerefExprWriter::send_server(char* message, char* type) const{
         exit(1);
     }
 
-    char buf[size_MAX];
-    memset(buf, 0x00, size_MAX);
+    	int s, len ;
+	char * data ;
 
-   
-    //if(strlen(message) == 0)
-    if(message==NULL) 
-	auto bytes_sent = send(sockFD, "crown_NULL", strlen("crown_NULL"), 0);
-    else
-    	auto bytes_sent = send(sockFD, message, strlen(message), 0);
+	char buf[size_MAX];
+	memset(buf, 0x00, size_MAX);
 
-    memset(buf, 0x00, size_MAX);
-    auto bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
-    auto ytes_sent = send(sockFD, type, strlen(type), 0);
+        data = message ;
+	len = strlen(message) ;
 
-    memset(buf, 0x00, size_MAX);
-    bytes_recv = recv(sockFD, buf, size_MAX, 0);
-    if (bytes_recv == -1) {
-        std::cerr << "Error while receiving bytes\n";
-        exit(1);
-    }
+	s = 0 ;
+	while (len > 0 && (s = send(sockFD, data, len, 0)) > 0) {
+		data += s ;
+		len -= s ;
+	}
+
+	shutdown(sockFD, SHUT_WR) ;
+
+	data = 0x0 ;
+	len = 0 ;
+
+	while ( (s = recv(sockFD, buf, size_MAX-1, 0)) > 0 ) {
+		buf[s] = 0x0 ;
+		if (data == 0x0) {
+			data = strdup(buf) ;
+			len = s ;
+		}
+		else {
+			data = (char*)realloc(data, len + s + 1) ;
+			strncpy(data + len, buf, s) ;
+			data[len + s] = 0x0 ;
+			len += s ;
+		}
+	}
 
     close(sockFD);
     freeaddrinfo(p);

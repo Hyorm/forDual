@@ -41,7 +41,7 @@ public:
 
 	void Swap(SymbolicExecutionWriter& se);
 
-	void send_server_exec(char* message, char* type) const;
+	void send_server_exec(char* message) const;
 
 	void Serialize(ostream &os, const ObjectTrackerWriter* tracker) const;
   const vector<string>& var_names() const { return var_names_; }
