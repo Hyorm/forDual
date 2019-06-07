@@ -17,4 +17,4 @@
 2. run_crown ./uart [iter num] [-method]
 
 
-###You must include -lwiringPi in crown make file
+### You must include -lwiringPi in crown make file
